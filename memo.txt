@@ -1,0 +1,38 @@
+1. 해커 대비 config/config.json의 json을 js로 바꾼다.
+1-2. 아래와 같은 형식으로 dotenv를 사용하도록 바꾼다.
+require('dotenv').config()
+module.exports = {
+  "development": {...
+
+2. 패키지제이슨을 수정.
+2-1. "start": "NODE_ENV=production PORT=80 node app"은 맥이나 리눅스에서만 되는 명령어이기 때문에 npm i cross-env를 설치.  "cross-env NODE_ENV=production PORT=80 node app"로 수정.
+
+3. 보안 관련 npm audit을 입력하면 found 0 vulnerabilities이라는 결과가 나오면 아무런 취약점이 없다는 뜻임.  만약 found 2..등 취약점이 발견된 경우 npm audit fix를 입력하면 해결 가능한건 알아서 해결해주고 아닌 것은 수동으로 해결해줘야함.
+
+4. 배포시에는 노드몬이 아닌 pm2를 사용함. 패키지와 글로벌 2개 다 설치해줌(npm i pm2 / npm i -g pm2)  패키지.제이슨도 수정 "start": "cross-env NODE_ENV=production PORT=80 pm2 start app.js"
+4-1. pm2 list: 돌아가고 있는 프로세스 표시.  pm2 restart all: 서버 모두 재시작.  pm2 monit: 실시간으로 서버에 뭐가생기는지 볼수있음.  pm2 kill: 서버 끄기.  pm2 update: [PM2][WARN] Current process list running is not in sync with saved list...오류 뜰 때.
+4-2. pm2는 멀티스레드를 사용할 수 있음.  "cross-env NODE_ENV=production PORT=80 pm2 start app.js -i 0"으로 수정.  -i 0은 내 시피유 코어 갯수를 모를 때 사용하고 그러면 알아서 코어갯수만큼 지정됨. -i 4라고 입력하면 4개의 코어를 쓰는 것임.  -i -1이라고 쓰면 코어가 8개일 경우 7개만 생성을해서 사용하고 1개는 남겨두고 다른 작업을 할 수 있게함.(가장 많이 씀.)  pm2 list를 했을 때 나오는 옵션 중 mode가 fork에서 cluster로 바뀜. 서버 4개가 생성되었을 경우 오류 등으로 3개가 죽어도 1개가 살아남기 때문에 안정적으로 만들어줌.  cluster모드를 끄려면 pm2 kill
+4-3. pm2는 서버가 죽어도 알아서 재시작함.
+
+
+5. 클라우드 서버는 console.log()만으로 기록이 남아있으나, 클라우드서버를 안 쓸 경우 서버가 날아가면 오류내용도 날아감.  이럴 때는 winston@next 패키지를 사용하여 오류기록을 남김.  패키지를 인스톨하고 logger.js파일을 만들고 코드를 넣음.  app.js등 세팅 후 - 에러가 나는 경우 파일이 생성되면서 에러코드를 남겨줌.
+5-1. npm i winston-daily-rotate-file을 설치하면 날짜별로 기록됨.
+
+
+6. 보안 패키지(제로초는 모든 배포환경일 때 다 깔음): helmet, hpp
+6-1. helmet은 보안이 너무 쎄서 ifraim같은 것을 못쓸 수도 있지만 미들웨어 작성 시 옵션을 주면 됨.
+
+
+7. npm i redis connect-resid: 서버가 재시작될 때 세션이 날아가는 것을 방지.(로그인 해제 등)  redis는 일종의 db.
+7-1. app.redislabs.com에서 무료로 레디스 호스팅을 해줌.(무료 & 유료 버전 따로있음.)  
+cofiguration창에 Endpoint에 있는 것이 주소(여기서는 redis-10752.c82.us-east-1-2.ec2.cloud.redislabs.com)  .env에 REDIS_HOST=redis-10752.c82.us-east-1-2.ec2.cloud.redislabs.com:10752와 REDIS_PORT=10752를 넣어줌.
+Access Control & Securit가 비밀번호(여기서는 z0QWCZV6AR9tYAEfVlW1jGt1xjxhDRG1)  .env에 REDIS_PASSWORD=z0QWCZV6AR9tYAEfVlW1jGt1xjxhDRG1해줌.
+
+
+8. npm i -g n: npm 버전관리 패키지.  설치 후 npm i -g n을 해주면 npm들이 업데이트됨.  노드 버전을 올리려면 원래 기존 노드를 삭제하고 새로 깔아야하는데 그럴 필요 없어짐. 
+윈도우에서는 nvm 을 nvm windows버전을 깃헙에 가서 다운받아서 설치해야함.
+
+
+9. gcp, aws에 배포하기. 
+9-1. 깃헙 / 깃 가입&설치해야함.
+9-2. .gitignore파일 만들기 / 내용작성(안올리고싶은거)
